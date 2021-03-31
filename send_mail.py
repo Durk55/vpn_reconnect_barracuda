@@ -21,7 +21,7 @@ class sendMail:
         Sender Email
         PW
         Receiver Addresse
-        OPTIONAL: logfile = File witch you want to send, default is "vpnconnection.logi"
+        OPTIONAL: logfile = File witch you want to send, default is "vpnconnection.log"
         """
         if logfile.isspace():
             logfile = "vpnconnection.log"
@@ -142,4 +142,3 @@ def main():
         x.sending()
 
 main()
-
