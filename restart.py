@@ -1,9 +1,10 @@
-import requests 
+import requests
 from datetime import datetime
 import json 
 import time 
 import logging 
 import urllib3 
+import argparse
 from requests.auth import HTTPBasicAuth 
 urllib3.disable_warnings() 
 logging.basicConfig(filename='vpnconnection.log', format='%(asctime)s,%(levelname)s,%(message)s', datefmt='%Y-%m-%d %I:%M:%S', level=logging.INFO) 
@@ -49,36 +50,38 @@ class connectionRestoring:
         Gets a list of IP Address, Token, FW Name, IP Tunnel Internal Name and Status
         Internal Name and Status are received through GET Command
         """
-        try:
-            for index in range(len(self.ip_addrs)):
-                params_tunnels = { "name": "", "type": "", "transport": "", "encryption": "", "hashing": "", "local": "", "peer": "", "group": "", "envelope": True, "X-API-Token": self.api_tokens[index] } 
+        for index in range(len(self.ip_addrs)):
+            try:
+                params_tunnels = { "name": "", "type": "", "transport": "", "encryption": "", "hashing": "", "local": "", "peer": "", "group": "", "envelope": True } 
+                header = { "X-API-Token": self.api_tokens[index] }
                 request = "https://"+self.ip_addrs[index]+":8443/rest/vpn/v1/tunnels" 
-                response = requests.get(request, params=params_tunnels, auth=HTTPBasicAuth('root', 'ngf1r3wall'), verify=False) 
-                resp = response.json() 
+                response = requests.get(request, params=params_tunnels, headers=header, verify=False)
+                resp = response.json()
                 resp = resp.get("VPNTunnels")
                 if resp is None:
                     continue
                 for vpn in resp:
-                    tunnels = [] 
-                    tunnels.append(self.ip_addrs[index]) 
-                    tunnels.append(self.api_tokens[index]) 
-                    tunnels.append(self.fw_names[index]) 
-                    tunnels.append(vpn['internal_name']) 
-                    tunnels.append(vpn['status']) 
+                    tunnels = []
+                    tunnels.append(self.ip_addrs[index])
+                    tunnels.append(self.api_tokens[index])
+                    tunnels.append(self.fw_names[index])
+                    tunnels.append(vpn['internal_name'])
+                    tunnels.append(vpn['status'])
                     self.tunnel_list.append(tunnels)
-        except requests.exceptions.RequestException as e:
-            self.requestError(e)
+            except requests.exceptions.RequestException as e:
+                self.requestError(e)
 
     def requestError(self, e):
         """
         If an error occured during a request operation, it will be written in the logfile "requestError.log"
         """
         try:
-            with open('requestError.log', 'a') as f:
+            with open('requestError_restart.log', 'a') as f:
                 now = datetime.now()
                 dt_string = now.strftime("%Y-%m-%d %I:%M:%S,")
                 txt = dt_string+str(e)
                 f.write(txt+'\n')
+                return
         except OSError:
             print("Could not open file requestError.log!")
 
@@ -103,9 +106,10 @@ class connectionRestoring:
             POST Command that trys to initiate a VPN Tunnel with REST API
         """
         try:
-            params_init = { "tunnel": name, "envelope": True, "X-API-Token": token } 
+            params_init = { "tunnel": name, "envelope": True} 
+            header = { "X-API-Token": token }
             request = "https://"+ip+":8443/rest/vpn/v1/tunnels/"+name+"/initiate" 
-            response = requests.post(request, params=params_init, auth=HTTPBasicAuth('root', 'ngf1r3wall'), verify=False)
+            response = requests.post(request, params=params_init, headers=header, verify=False)
         except requests.exceptions.RequestException as e:
             self.requestError(e)
 
