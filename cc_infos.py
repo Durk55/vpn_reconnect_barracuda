@@ -34,6 +34,20 @@ class cc_Infos():
         self.token = token
         self.ip_name_list = []
 
+    #def getTokenAndIp(self):
+    #    """
+    #    Gets the IP Address of the CC Firewall and the REST-API Token from a file called "ccinfos.txt"
+    #    Optional(DE): Villeicht die IP und den Token der CC Firewall als argument uebergeben
+    #    """
+    #    try:
+    #        with open('ccinfos.txt', 'r') as f:
+    #            for lines in f.readlines():
+    #                ip, token = lines.split(',')
+    #                self.cc_ip = ip
+    #                self.cc_token = token.rstrip('\n')
+    #    except OSError:
+    #        print("Could not open file ccinfos.txt!")
+
     def getRanges(self):
         """
         Gets the avaliable Ranges from the CC Firewall and saves them in a List
@@ -131,6 +145,7 @@ class cc_Infos():
             print("Could not open file reqeustError.log")
 
 x = cc_Infos(args.ip, args.cc_token, args.token)
+#x.getTokenAndIp()
 x.getRanges()
 x.getCluster()
 x.getBoxes()
