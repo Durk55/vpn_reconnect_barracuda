@@ -9,6 +9,10 @@ from requests.auth import HTTPBasicAuth
 urllib3.disable_warnings() 
 logging.basicConfig(filename='vpnconnection.log', format='%(asctime)s,%(levelname)s,%(message)s', datefmt='%Y-%m-%d %I:%M:%S', level=logging.INFO) 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-fw', '--list', dest='fw',  nargs='+', required=False)
+args = parser.parse_args()
+
 class connectionRestoring:
     """
     This Class was made to restore VPN Connection with the Barracuda REST API
@@ -21,7 +25,13 @@ class connectionRestoring:
         self.api_tokens = [] 
         self.fw_names = []
         self.tunnel_list = []
- 
+        self.single_list = []
+    
+    def clearList(self):
+        self.ip_addrs = []
+        self.api_tokens = []
+        self.fw_names = []
+
     def getIpAndToken(self):
         """
         This Function get ip addresses and token from a file calles "fwlist" and puts each in a list.
@@ -55,7 +65,7 @@ class connectionRestoring:
                 params_tunnels = { "name": "", "type": "", "transport": "", "encryption": "", "hashing": "", "local": "", "peer": "", "group": "", "envelope": True } 
                 header = { "X-API-Token": self.api_tokens[index] }
                 request = "https://"+self.ip_addrs[index]+":8443/rest/vpn/v1/tunnels" 
-                response = requests.get(request, params=params_tunnels, headers=header, verify=False)
+                response = requests.get(request, params=params_tunnels, headers=header, timeout=1, verify=False)
                 resp = response.json()
                 resp = resp.get("VPNTunnels")
                 if resp is None:
@@ -113,10 +123,36 @@ class connectionRestoring:
         except requests.exceptions.RequestException as e:
             self.requestError(e)
 
+    def getSingleData(self):
+        for index in range(len(args.fw)):
+            for i in range(len(self.fw_names)):
+                if args.fw[index] == self.fw_names[i]:
+                    listy = []
+                    listy.append(self.ip_addrs[i])     
+                    listy.append(self.fw_names[i])     
+                    listy.append(self.api_tokens[i])
+                    self.single_list.append(listy)
+    
+    def setRestoringData(self):
+        self.clearList()
+        for row in self.single_list:
+            ip, fw, token = row
+            self.ip_addrs.append(ip)
+            self.fw_names.append(fw)
+            self.api_tokens.append(token)
+
 try:
-    connect = connectionRestoring()
-    connect.getIpAndToken()
-    connect.getVpnData() 
-    connect.restoreConnection()
+    if args.fw:
+        connect = connectionRestoring()
+        connect.getIpAndToken()
+        connect.getSingleData()
+        connect.setRestoringData()
+        connect.getVpnData()
+        connect.restoreConnection()
+    else:
+        connect = connectionRestoring()
+        connect.getIpAndToken()
+        connect.getVpnData() 
+        connect.restoreConnection()
 except KeyboardInterrupt: 
     print("session closed")
